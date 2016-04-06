@@ -732,7 +732,7 @@ static int wt_format_name(char *ret, int ret_len,
 
         for (i=0; i < (sizeof(meta_tag_metric_id)/sizeof(*meta_tag_metric_id)); i++)
         {
-            if (0 == meta_data_exists(vl->meta, meta_tag_metric_id[i]))
+            if (meta_data_exists(vl->meta, meta_tag_metric_id[i]) == 0)
             {
                 /* defaults to already initialized format */
             }
