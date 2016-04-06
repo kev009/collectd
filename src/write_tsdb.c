@@ -283,7 +283,8 @@ static int wt_flush_nolock(cdtime_t timeout, struct wt_callback *cb)
 static cdtime_t new_random_ttl()
 {
     time_t ttl = 0;
-    if(use_dnsrandomttl) {
+    if (use_dnsrandomttl)
+    {
         ttl = (time_t)(dnsrandomttl * ((double) random ()) / (((double) RAND_MAX) + 1.0));
     }
     return TIME_T_TO_CDTIME_T(ttl);
@@ -302,29 +303,35 @@ static int wt_callback_init(struct wt_callback *cb)
         return 0;
 
     now = cdtime();
-    if(cb->sock_info) {
+    if (cb->sock_info)
+    {
         /* When we are here, we still have the IP in cache.
          * If we have remaining attempts without calling the DNS, we update the
          * last_update date so we keep the info until next time.
          * If there is no more attempts, we need to flush the cache.
          */
 
-        if ((cb->sock_info_last_update + dnsttl + cb->next_random_ttl) < now) {
+        if ((cb->sock_info_last_update + dnsttl + cb->next_random_ttl) < now)
+        {
             cb->next_random_ttl = new_random_ttl();
-            if(cb->connect_dns_failed_attempts_remaining > 0) {
+            if (cb->connect_dns_failed_attempts_remaining > 0)
+            {
                 /* Warning : this is run under send_lock mutex. 
                  * This is why we do not use another mutex here.
                  * */
                 cb->sock_info_last_update = now;
                 cb->connect_dns_failed_attempts_remaining-- ;
-            } else {
+            }
+            else
+            {
                 freeaddrinfo(cb->sock_info);
                 cb->sock_info = NULL;
             }
         }
     }
 
-    if(NULL == cb->sock_info) {
+    if (NULL == cb->sock_info)
+    {
         struct addrinfo ai_hints;
 
         memset(&ai_hints, 0, sizeof(ai_hints));
@@ -334,7 +341,8 @@ static int wt_callback_init(struct wt_callback *cb)
         ai_hints.ai_family   = AF_UNSPEC;
         ai_hints.ai_socktype = SOCK_STREAM;
 
-        if ((cb->sock_info_last_update + dnsttl + cb->next_random_ttl) >= now) {
+        if ((cb->sock_info_last_update + dnsttl + cb->next_random_ttl) >= now)
+        {
                 DEBUG("write_tsdb plugin: too many getaddrinfo (%s, %s) failures",
                         node, service);
             return(-1);
@@ -345,11 +353,13 @@ static int wt_callback_init(struct wt_callback *cb)
         status = getaddrinfo(node, service, &ai_hints, &(cb->sock_info));
         if (status != 0)
         {
-            if(cb->sock_info) {
+            if (cb->sock_info)
+            {
                 freeaddrinfo(cb->sock_info);
                 cb->sock_info = NULL;
             }
-            if(cb->connect_failed_log_enabled) {
+            if (cb->connect_failed_log_enabled)
+            {
                 ERROR("write_tsdb plugin: getaddrinfo (%s, %s) failed: %s",
                         node, service, gai_strerror (status));
                 cb->connect_failed_log_enabled = 0;
@@ -379,7 +389,8 @@ static int wt_callback_init(struct wt_callback *cb)
 
     if (cb->sock_fd < 0)
     {
-        if(cb->connect_failed_log_enabled) {
+        if (cb->connect_failed_log_enabled)
+        {
             char errbuf[1024];
             ERROR("write_tsdb plugin: Connecting to %s:%s failed. "
                     "The last error was: %s", node, service,
@@ -389,7 +400,8 @@ static int wt_callback_init(struct wt_callback *cb)
         return -1;
     }
 
-    if(0 == cb->connect_failed_log_enabled) {
+    if (0 == cb->connect_failed_log_enabled)
+    {
         WARNING("write_tsdb plugin: Connecting to %s:%s succeeded.",node, service);
         cb->connect_failed_log_enabled = 1;
     }
@@ -443,7 +455,8 @@ static int wt_flush(cdtime_t timeout,
         status = wt_callback_init(cb);
         if (status != 0)
         {
-            if(cb->connect_failed_log_enabled || cb->sock_fd >= 0) {
+            if (cb->connect_failed_log_enabled || cb->sock_fd >= 0)
+            {
                 /* Do not log if socket is not enabled : it was logged already
                  * in wt_callback_init(). */
                 ERROR("write_tsdb plugin: wt_callback_init failed.");
@@ -539,10 +552,13 @@ static int wt_format_tags(char *ret, int ret_len,
 #define TSDB_META_DATA_GET_STRING(tag) do { \
         temp = NULL; \
         status = meta_data_get_string(vl->meta, tag, &temp); \
-        if (status == -ENOENT) { \
+        if (status == -ENOENT) \
+        { \
             temp = NULL; \
             /* defaults to empty string */ \
-        } else if (status < 0) { \
+        } \
+        else if (status < 0) \
+        { \
             sfree(temp); \
             return status; \
         } \
@@ -552,11 +568,14 @@ static int wt_format_tags(char *ret, int ret_len,
         int n; \
         const char *k = (key); \
         const char *v = (value); \
-        if(k[0] != '\0' && v[0] != '\0') { \
+        if (k[0] != '\0' && v[0] != '\0') \
+        { \
             n = ssnprintf(ptr, remaining_len, " %s=%s", k, v); \
-            if(n >= remaining_len) { \
+            if (n >= remaining_len) { \
                 ptr[0] = '\0'; \
-            } else { \
+            } \
+            else \
+            { \
                 char *ptr2 = ptr+1; \
                 while(NULL != (ptr2 = strchr(ptr2, ' '))) ptr2[0] = '_';  \
                 ptr += n; \
@@ -565,46 +584,56 @@ static int wt_format_tags(char *ret, int ret_len,
         } \
     } while(0)
 
-    if (vl->meta) {
+    if (vl->meta)
+    {
         TSDB_META_DATA_GET_STRING(meta_tag_metric_id[TSDB_TAG_PLUGIN]);
-        if(temp) {
+        if (temp)
+        {
             TSDB_STRING_APPEND_SPRINTF(temp, vl->plugin);
             sfree(temp);
         }
 
         TSDB_META_DATA_GET_STRING(meta_tag_metric_id[TSDB_TAG_PLUGININSTANCE]);
-        if(temp) {
+        if (temp)
+        {
             TSDB_STRING_APPEND_SPRINTF(temp, vl->plugin_instance);
             sfree(temp);
         }
 
         TSDB_META_DATA_GET_STRING(meta_tag_metric_id[TSDB_TAG_TYPE]);
-        if(temp) {
+        if (temp)
+        {
             TSDB_STRING_APPEND_SPRINTF(temp, vl->type);
             sfree(temp);
         }
 
         TSDB_META_DATA_GET_STRING(meta_tag_metric_id[TSDB_TAG_TYPEINSTANCE]);
-        if(temp) {
+        if (temp)
+        {
             TSDB_STRING_APPEND_SPRINTF(temp, vl->type_instance);
             sfree(temp);
         }
 
-        if(ds_name) {
+        if (ds_name)
+        {
             TSDB_META_DATA_GET_STRING(meta_tag_metric_id[TSDB_TAG_DSNAME]);
-            if(temp) {
+            if (temp)
+            {
                 TSDB_STRING_APPEND_SPRINTF(temp, ds_name);
                 sfree(temp);
             }
         }
 
         n = meta_data_toc(vl->meta, &meta_toc);
-        for(i=0; i<n; i++) {
-            if(strncmp(meta_toc[i], TSDB_META_TAG_ADD_PREFIX, sizeof(TSDB_META_TAG_ADD_PREFIX)-1)) {
+        for (i=0; i<n; i++)
+        {
+            if (strncmp(meta_toc[i], TSDB_META_TAG_ADD_PREFIX, sizeof(TSDB_META_TAG_ADD_PREFIX)-1))
+            {
                 free(meta_toc[i]);
                 continue;
             }
-            if( '\0' == meta_toc[i][sizeof(TSDB_META_TAG_ADD_PREFIX)-1]) {
+            if ( '\0' == meta_toc[i][sizeof(TSDB_META_TAG_ADD_PREFIX)-1])
+            {
                 ERROR("write_tsdb plugin: meta_data tag '%s' is unknown (host=%s, plugin=%s, type=%s)",
                         temp, vl->host, vl->plugin, vl->type);
                 free(meta_toc[i]);
@@ -612,14 +641,18 @@ static int wt_format_tags(char *ret, int ret_len,
             }
 
             TSDB_META_DATA_GET_STRING(meta_toc[i]);
-            if(temp && temp[0]) {
+            if (temp && temp[0])
+            {
                 int n;
                 char *key = meta_toc[i]+sizeof(TSDB_META_TAG_ADD_PREFIX)-1;
 
                 n = ssnprintf(ptr, remaining_len, " %s=%s", key, temp);
-                if(n >= remaining_len) {
+                if (n >= remaining_len)
+                {
                     ptr[0] = '\0';
-                } else {
+                }
+                else
+                {
                     /* We do not check the tags syntax here. It should have
                      * been done earlier.
                      */
@@ -627,12 +660,14 @@ static int wt_format_tags(char *ret, int ret_len,
                     remaining_len -= n;
                 }
             }
-            if(temp) sfree(temp);
+            if (temp) sfree(temp);
             free(meta_toc[i]);
         }
-        if(meta_toc) free(meta_toc);
+        if (meta_toc) free(meta_toc);
 
-    } else {
+    }
+    else
+    {
         ret[0] = '\0';
     }
 
@@ -663,46 +698,66 @@ static int wt_format_name(char *ret, int ret_len,
         /* ds_name =         */ (ds_name == NULL)?0:1
     };
 
-    if (vl->meta) {
+    if (vl->meta)
+    {
         status = meta_data_get_string(vl->meta, meta_prefix, &temp);
-        if (status == -ENOENT) {
+        if (status == -ENOENT)
+        {
             /* defaults to empty string */
-        } else if (status < 0) {
+        }
+        else if (status < 0)
+        {
             sfree(temp);
             return status;
-        } else {
+        }
+        else
+        {
             prefix = temp;
         }
 
         status = meta_data_get_string(vl->meta, meta_id, &temp);
-        if (status == -ENOENT) {
+        if (status == -ENOENT)
+        {
             /* defaults to empty string */
-        } else if (status < 0) {
+        }
+        else if (status < 0)
+        {
             sfree(temp);
             return status;
-        } else {
+        }
+        else
+        {
             tsdb_id = temp;
         }
 
-        for(i=0; i < (sizeof(meta_tag_metric_id)/sizeof(*meta_tag_metric_id)); i++) {
-            if(0 == meta_data_exists(vl->meta, meta_tag_metric_id[i])) {
+        for (i=0; i < (sizeof(meta_tag_metric_id)/sizeof(*meta_tag_metric_id)); i++)
+        {
+            if (0 == meta_data_exists(vl->meta, meta_tag_metric_id[i]))
+            {
                 /* defaults to already initialized format */
-            } else {
+            }
+            else
+            {
                 include_in_id[i] = 0;
             }
         }
     }
-    if(tsdb_id) {
+    if (tsdb_id)
+    {
         ssnprintf(ret, ret_len, "%s%s", prefix?prefix:"", tsdb_id);
-    } else {
+    }
+    else
+    {
 #define TSDB_STRING_APPEND_STRING(string) do { \
     const char *str = (string); \
     size_t len = strlen(str); \
-    if(len > (remaining_len - 1)) { \
+    if (len > (remaining_len - 1)) \
+    { \
         ptr[0] = '\0'; \
         return(-ENOSPC); \
     } \
-    if(len > 0) {  \
+    if (len > 0) \
+    {  \
         memcpy(ptr, str, len); \
         ptr += len; \
         remaining_len -= len; \
@@ -710,11 +765,14 @@ static int wt_format_name(char *ret, int ret_len,
 } while(0)
 
 #define TSDB_STRING_APPEND_DOT do { \
-    if(remaining_len > 2) {  \
+    if (remaining_len > 2) \
+    {  \
         ptr[0] = '.'; \
         ptr ++; \
         remaining_len --; \
-    } else {\
+    } \
+    else \
+    {\
         ptr[0] = '\0'; \
         return(-ENOSPC); \
     } \
@@ -722,26 +780,32 @@ static int wt_format_name(char *ret, int ret_len,
 
         char *ptr = ret;
         size_t remaining_len = ret_len;
-        if(prefix) {
+        if (prefix)
+        {
             TSDB_STRING_APPEND_STRING(prefix);
         }
-        if(include_in_id[TSDB_TAG_PLUGIN]) {
+        if (include_in_id[TSDB_TAG_PLUGIN])
+        {
             TSDB_STRING_APPEND_STRING(vl->plugin);
         }
 
-        if(include_in_id[TSDB_TAG_PLUGININSTANCE]) {
+        if (include_in_id[TSDB_TAG_PLUGININSTANCE])
+        {
             TSDB_STRING_APPEND_DOT;
             TSDB_STRING_APPEND_STRING(vl->plugin_instance);
         }
-        if(include_in_id[TSDB_TAG_TYPE]) {
+        if (include_in_id[TSDB_TAG_TYPE])
+        {
             TSDB_STRING_APPEND_DOT;
             TSDB_STRING_APPEND_STRING(vl->type);
         }
-        if(include_in_id[TSDB_TAG_TYPEINSTANCE]) {
+        if (include_in_id[TSDB_TAG_TYPEINSTANCE])
+        {
             TSDB_STRING_APPEND_DOT;
             TSDB_STRING_APPEND_STRING(vl->type_instance);
         }
-        if(include_in_id[TSDB_TAG_DSNAME]) {
+        if (include_in_id[TSDB_TAG_DSNAME])
+        {
             TSDB_STRING_APPEND_DOT;
             TSDB_STRING_APPEND_STRING(ds_name);
         }
@@ -777,15 +841,21 @@ static int wt_send_message (const char* key, const char* value,
     if (value[0] == 'n')
         return 0;
 
-    if (md) {
+    if (md)
+    {
         status = meta_data_get_string(md, meta_tsdb, &temp);
-        if (status == -ENOENT) {
+        if (status == -ENOENT)
+        {
             /* defaults to empty string */
-        } else if (status < 0) {
+        }
+        else if (status < 0)
+        {
             ERROR("write_tsdb plugin (%s:%s): tags metadata get failure", node, service);
             sfree(temp);
             return status;
-        } else {
+        }
+        else
+        {
             tags = temp;
         }
     }
@@ -805,7 +875,8 @@ static int wt_send_message (const char* key, const char* value,
         return -1;
     message_len = (size_t) status;
 
-    if (message_len >= sizeof(message)) {
+    if (message_len >= sizeof(message))
+    {
         ERROR("write_tsdb plugin(%s:%s): message buffer too small: "
               "Need %zu bytes.", node, service, message_len + 1);
         return -1;
@@ -818,7 +889,8 @@ static int wt_send_message (const char* key, const char* value,
         status = wt_callback_init(cb);
         if (status != 0)
         {
-            if(cb->connect_failed_log_enabled || cb->sock_fd >= 0) {
+            if (cb->connect_failed_log_enabled || cb->sock_fd >= 0)
+            {
                 /* Do not log if socket is not enabled : it was logged already
                  * in wt_callback_init(). */
                 ERROR("write_tsdb plugin (%s:%s): wt_callback_init failed.", node, service);
@@ -918,13 +990,14 @@ static int wt_write_messages(const data_set_t *ds, const value_list_t *vl,
             ERROR("write_tsdb plugin: error with format_tags");
             return status;
         }
-        
+
 
         /* Send the message to tsdb */
         status = wt_send_message(key, values, tags, vl->time, cb, vl);
         if (status != 0)
         {
-            if(cb->connect_failed_log_enabled) {
+            if (cb->connect_failed_log_enabled)
+            {
                 /* Do not log if socket is not enabled : it was logged already
                  * in wt_callback_init(). */
                 ERROR("write_tsdb plugin (%s:%s): error with "
@@ -1038,10 +1111,12 @@ static int wt_config(oconfig_item_t *ci)
             int ttl;
             cf_util_get_int(child, &ttl);
             config_random_ttl = 1;
-            if(ttl) {
+            if (ttl) {
                 dnsrandomttl = (double)ttl;
                 use_dnsrandomttl = 1;
-            } else {
+            }
+            else
+            {
                 use_dnsrandomttl = 0;
             }
         }
@@ -1052,7 +1127,8 @@ static int wt_config(oconfig_item_t *ci)
         }
     }
 
-    if(! config_random_ttl ) {
+    if (! config_random_ttl )
+    {
         use_dnsrandomttl = 1;
         dnsrandomttl = CDTIME_T_TO_DOUBLE(WRITE_TSDB_DEFAULT_DNS_RANDOM_TTL * plugin_get_interval());
     }
