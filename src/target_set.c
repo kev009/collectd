@@ -207,7 +207,7 @@ static int ts_create (const oconfig_item_t *ci, void **user_data) /* {{{ */
     {
       ERROR ("Target `set': You need to set at least one of `Host', "
           "`Plugin', `PluginInstance', `TypeInstance', "
-          "`MetaDataSet' or `MetaDataEval'.");
+          "or `MetaDataSet'.");
       status = -1;
     }
 
